@@ -6,3 +6,4 @@ docs/**/*.mo
 .idea
 venv/
 .venv/
+__pycache__/
