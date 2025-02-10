@@ -1,10 +1,15 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer, AutoModel
+from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse, JSONResponse, Response
 import threading
 import faiss
 import numpy as np
 import torch
+from googleapiclient.discovery import build
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -16,10 +21,26 @@ class QwenModel:
         self.cpu_only = False
         self.model = None
         self.tokenizer = None
-        self.index = None
         self.doc_embeddings = None
         self.histories = {}
-        self.latest_docs = {}
+        self.docs = {}
+        self.links = {}
+        self.doc_indices = {}
+        self.google_api_key = os.getenv("YOUR_GOOGLE_API_KEY")
+        self.google_cse_id = os.getenv("YOUR_CUSTOM_SEARCH_ENGINE_ID")
+            
+    def get_documents_from_google(self, query, num_results=5):
+        service = build("customsearch", "v1", developerKey=self.google_api_key)
+        res = service.cse().list(q=query, cx=self.google_cse_id, num=num_results).execute()
+        
+        documents = []
+        links = []
+        if "items" in res:
+            for item in res["items"]:
+                documents.append(item["snippet"])
+                links.append(item["link"])
+        
+        return documents, links
 
     def load_model_tokenizer(self):
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -43,18 +64,18 @@ class QwenModel:
 
         self.model.generation_config.max_new_tokens = 2048
 
-        self.create_faiss_index()
-
-    def create_faiss_index(self):
-        documents = ["Document 1 text", "Document 2 text"]
+    def create_faiss_index(self, query, id):
+        self.docs[id], self.links[id] = self.get_documents_from_google(query)
         doc_embeddings = []
-        for doc in documents:
+        for doc in self.docs[id]:
             doc_embeddings.append(self.get_embedding(doc))
 
         doc_embeddings_np = np.array(doc_embeddings)
         dimension = doc_embeddings_np.shape[1]
-        self.index = faiss.IndexFlatL2(dimension)
-        self.index.add(doc_embeddings_np)
+        index = faiss.IndexFlatL2(dimension)
+        index.add(doc_embeddings_np)
+
+        return index
 
     def get_embedding(self, text):
         """Get the embedding for a text using the model"""
@@ -68,18 +89,13 @@ class QwenModel:
 
     def retrieve_documents(self, query, id):
         query_embedding = self.get_embedding(query)
-
         query_embedding_np = query_embedding.reshape(1, -1)
     
-        k = 2
-        docs, indices = self.index.search(query_embedding_np, k)
-
-        print(docs)
-        print(indices)
+        k = 3
+        index = self.create_faiss_index(query, id)
+        _, self.doc_indices[id] = index.search(query_embedding_np, k)
         
-        retrieved_docs = [f"Document {i+1} text" for i in indices[0]]
-        
-        self.latest_docs[id] = retrieved_docs
+        retrieved_docs = [self.docs[id][i] for i in self.doc_indices[id]]
 
         return retrieved_docs
 
@@ -156,13 +172,18 @@ async def chat_delete_history(id: str):
 
 @app.get("/chat/rag-doc")
 async def chat_rag_doc(id: str):
-    if id in model.latest_docs:
-        return JSONResponse(model.latest_docs[id])
+    if id in model.doc_indices:
+        docs = {
+            "docs": model.docs[id],
+            "links": model.links[id]
+        }
+        return JSONResponse(docs)
     return JSONResponse({"message": "History not found"}, status_code=404)
 
 @app.get("/chat/del-rag-doc")
 async def chat_delete_rag_doc(id: str):
-    if id in model.latest_docs:
-        model.latest_docs.pop(id)
+    if id in model.doc_indices:
+        model.doc_indices.pop(id)
+        model.docs.pop(id)
     
     return Response()
