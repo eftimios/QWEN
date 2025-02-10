@@ -93,8 +93,8 @@ class QwenModel:
     
         k = 3
         index = self.create_faiss_index(query, id)
-        _, self.doc_indices[id] = index.search(query_embedding_np, k)
-        print(self.doc_indices[id])
+        _, indices = index.search(query_embedding_np, k)
+        self.doc_indices[id] = indices.squueeze()
         
         retrieved_docs = [self.docs[id][i] for i in self.doc_indices[id]]
 
