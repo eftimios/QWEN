@@ -174,10 +174,10 @@ async def chat_delete_history(id: str):
 @app.get("/chat/rag-doc")
 async def chat_rag_doc(id: str):
     if id in model.doc_indices:
-        docs = {
-            "docs": model.docs[id],
-            "links": model.links[id]
-        }
+        docs = [{
+            "docs": model.docs[id][i],
+            "links": model.links[id][i]
+        } for i in model.doc_indices[id]]
         return JSONResponse(docs)
     return JSONResponse({"message": "History not found"}, status_code=404)
 
