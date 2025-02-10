@@ -54,10 +54,10 @@ class QwenModel:
             for item in res["items"]:
                 snippet = item.get("snippet", "")
                 link = item.get("link", "")
-                links.append(link)
 
                 full_text = self.get_full_text(link)
                 if full_text:
+                    links.append(link)
                     documents.append({
                         "snippet": snippet,
                         "full_text": full_text
@@ -91,7 +91,7 @@ class QwenModel:
         self.docs[id], self.links[id] = self.get_documents_from_google(query)
         doc_embeddings = []
         for doc in self.docs[id]:
-            doc_embeddings.append(self.get_embedding(doc))
+            doc_embeddings.append(self.get_embedding_from_dict(doc))
 
         doc_embeddings_np = np.array(doc_embeddings)
         dimension = doc_embeddings_np.shape[1]
@@ -100,7 +100,7 @@ class QwenModel:
 
         return index
 
-    def get_embedding(self, doc: dict):
+    def get_embedding_from_dict(self, doc):
         """Get the embedding for a dict using the model"""
         inputs = self.tokenizer(f"Snippet: {doc['snippet']}\nFull-Text: {doc['full_text']}", 
             return_tensors="pt", padding=True, truncation=True, max_length=512).to(self.model.device)
@@ -111,7 +111,7 @@ class QwenModel:
             embeddings = embeddings.to(torch.float32)
         return embeddings.cpu().numpy().squeeze()
 
-    def get_embedding(self, text: str):
+    def get_embedding_from_str(self, text):
         """Get the embedding for a text using the model"""
         inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512).to(self.model.device)
         with torch.no_grad():
@@ -122,7 +122,7 @@ class QwenModel:
         return embeddings.cpu().numpy().squeeze()
 
     def retrieve_documents(self, query, id):
-        query_embedding = self.get_embedding(query)
+        query_embedding = self.get_embedding_from_str(query)
         query_embedding_np = query_embedding.reshape(1, -1)
     
         k = 3
