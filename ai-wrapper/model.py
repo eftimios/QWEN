@@ -26,7 +26,6 @@ class QwenModel:
         self.doc_embeddings = None
         self.histories = {}
         self.docs = {}
-        self.links = {}
         self.doc_indices = {}
         self.google_api_key = os.getenv("YOUR_GOOGLE_API_KEY")
         self.google_cse_id = os.getenv("YOUR_CUSTOM_SEARCH_ENGINE_ID")
@@ -47,23 +46,23 @@ class QwenModel:
         service = build("customsearch", "v1", developerKey=self.google_api_key)
         res = service.cse().list(q=query, cx=self.google_cse_id, num=num_results).execute()
 
+        print(res)
+
         documents = []
-        links = []
 
         if "items" in res:
             for item in res["items"]:
+                title = item.get("title", "")
                 snippet = item.get("snippet", "")
                 link = item.get("link", "")
+                
+                documents.append({
+                    "title": title,
+                    "link": link,
+                    "snippet": snippet,
+                })
 
-                full_text = self.get_full_text(link)
-                if full_text:
-                    links.append(link)
-                    documents.append({
-                        "snippet": snippet,
-                        "full_text": full_text
-                    })
-
-        return documents, links
+        return documents
 
     def load_model_tokenizer(self):
         self.tokenizer = AutoTokenizer.from_pretrained(
@@ -88,7 +87,7 @@ class QwenModel:
         self.model.generation_config.max_new_tokens = 2048
 
     def create_faiss_index(self, query, id):
-        self.docs[id], self.links[id] = self.get_documents_from_google(query)
+        self.docs[id] = self.get_documents_from_google(query)
         doc_embeddings = []
         for doc in self.docs[id]:
             doc_embeddings.append(self.get_embedding_from_dict(doc))
@@ -102,7 +101,7 @@ class QwenModel:
 
     def get_embedding_from_dict(self, doc):
         """Get the embedding for a dict using the model"""
-        inputs = self.tokenizer(f"Snippet: {doc['snippet']}\nFull-Text: {doc['full_text']}", 
+        inputs = self.tokenizer(f"Title: {doc['title']}\nSnippet: {doc['snippet']}", 
             return_tensors="pt", padding=True, truncation=True, max_length=512).to(self.model.device)
         with torch.no_grad():
             outputs = self.embedder(**inputs)
@@ -142,7 +141,12 @@ class QwenModel:
         
         if use_rag:
             retrieved_docs = self.retrieve_documents(query, id)
-            conversation.extend([{"role": "system", "content": f"Snippet: {doc['snippet']}\nFull-Text: {doc['full_text']}"} for doc in retrieved_docs])
+            conversation.extend([
+                {
+                    "role": "system", 
+                    "content": f"Title: {doc['title']}\nSnippet: {doc['snippet']}\nFull-Text: {self.get_full_text(doc['link'])}"
+                } for doc in retrieved_docs
+            ])
 
         conversation.append({"role": "user", "content": query})
 
@@ -208,10 +212,7 @@ async def chat_delete_history(id: str):
 @app.get("/chat/rag-doc")
 async def chat_rag_doc(id: str):
     if id in model.doc_indices:
-        docs = [{
-            "docs": model.docs[id][i],
-            "links": model.links[id][i]
-        } for i in model.doc_indices[id]]
+        docs = [model.docs[id][i] for i in model.doc_indices[id]]
         return JSONResponse(docs)
     return JSONResponse({"message": "History not found"}, status_code=404)
 
@@ -220,6 +221,5 @@ async def chat_delete_rag_doc(id: str):
     if id in model.doc_indices:
         model.doc_indices.pop(id)
         model.docs.pop(id)
-        model.links.pop(id)
     
     return Response()
