@@ -100,10 +100,20 @@ class QwenModel:
 
         return index
 
-    def get_embedding(self, doc):
-        """Get the embedding for a text using the model"""
-        inputs = self.tokenizer(f"Snippet: {doc.get("snippet")}\nFull-Text: {doc.get("full_text")}", 
+    def get_embedding(self, doc: dict):
+        """Get the embedding for a dict using the model"""
+        inputs = self.tokenizer(f"Snippet: {doc['snippet']}\nFull-Text: {doc['full_text']}", 
             return_tensors="pt", padding=True, truncation=True, max_length=512).to(self.model.device)
+        with torch.no_grad():
+            outputs = self.embedder(**inputs)
+            embeddings = outputs.last_hidden_state.mean(dim=1)
+            
+            embeddings = embeddings.to(torch.float32)
+        return embeddings.cpu().numpy().squeeze()
+
+    def get_embedding(self, text: str):
+        """Get the embedding for a text using the model"""
+        inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512).to(self.model.device)
         with torch.no_grad():
             outputs = self.embedder(**inputs)
             embeddings = outputs.last_hidden_state.mean(dim=1)
@@ -132,7 +142,7 @@ class QwenModel:
         
         if use_rag:
             retrieved_docs = self.retrieve_documents(query, id)
-            conversation.extend([{"role": "system", "content": f"Snippet: {doc.get("snippet")}\nFull-Text: {doc.get("full_text")}"} for doc in retrieved_docs])
+            conversation.extend([{"role": "system", "content": f"Snippet: {doc['snippet']}\nFull-Text: {doc['full_text']}"} for doc in retrieved_docs])
 
         conversation.append({"role": "user", "content": query})
 
