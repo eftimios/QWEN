@@ -171,8 +171,10 @@ class QwenModel:
         for new_text in streamer:
             yield new_text
 
-    def prompt(self, query, history, id, use_rag=True):
+    def prompt(self, query, id, history = None, use_rag=True):
         partial_text = ""
+        if (history is None):
+            history = self.histories.get(id, [])
 
         with lock:
             for new_text in self.chat_stream(query, history, id, use_rag):
@@ -188,11 +190,11 @@ model.load_model_tokenizer()
 @app.post("/chat")
 async def chat_stream(request: dict):
     query = request.get("query")
-    history = request.get("history", [])
+    history = request.get("history", None)
     id = request.get("id")
     use_rag = request.get("rag", True)
 
-    return StreamingResponse(model.prompt(query, history, id, use_rag), media_type="text/plain")
+    return StreamingResponse(model.prompt(query, id, history, use_rag), media_type="text/plain")
 
 @app.get("/chat/history")
 async def chat_history(id: str):
