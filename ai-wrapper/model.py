@@ -29,6 +29,7 @@ class QwenModel:
         self.doc_indices = {}
         self.google_api_key = os.getenv("YOUR_GOOGLE_API_KEY")
         self.google_cse_id = os.getenv("YOUR_CUSTOM_SEARCH_ENGINE_ID")
+        self.load_model_tokenizer()
         
     def get_full_text(self, url):
         try:
@@ -85,7 +86,9 @@ class QwenModel:
         self.model.generation_config.max_new_tokens = 2048
 
     def create_faiss_index(self, query, id):
-        self.docs[id] = self.get_documents_from_google(query)
+        with lock:
+            self.docs[id] = self.get_documents_from_google(query)
+
         doc_embeddings = []
         for doc in self.docs[id]:
             doc_embeddings.append(self.get_embedding_from_dict(doc))
@@ -125,7 +128,9 @@ class QwenModel:
         k = 3
         index = self.create_faiss_index(query, id)
         _, indices = index.search(query_embedding_np, k)
-        self.doc_indices[id] = indices.squeeze()
+
+        with lock:
+            self.doc_indices[id] = indices.squeeze()
         
         retrieved_docs = [self.docs[id][i] for i in self.doc_indices[id]]
 
@@ -176,16 +181,16 @@ class QwenModel:
         if (history is None):
             history = self.histories.get(id, [])
 
-        with lock:
-            for new_text in self.chat_stream(query, history, id, use_rag):
-                partial_text += new_text
-                yield new_text
+        for new_text in self.chat_stream(query, history, id, use_rag):
+            partial_text += new_text
+            yield new_text
 
-            history.append((query, partial_text))
+        history.append((query, partial_text))
+        
+        with lock:
             self.histories[id] = history
 
 model = QwenModel()
-model.load_model_tokenizer()
 
 @app.post("/chat")
 async def chat_stream(request: dict):
