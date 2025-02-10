@@ -46,8 +46,6 @@ class QwenModel:
         service = build("customsearch", "v1", developerKey=self.google_api_key)
         res = service.cse().list(q=query, cx=self.google_cse_id, num=num_results).execute()
 
-        print(res)
-
         documents = []
 
         if "items" in res:
