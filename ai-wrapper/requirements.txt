@@ -3,3 +3,4 @@ accelerate
 transformers
 fastapi
 uvicorn
+faiss-cpu
