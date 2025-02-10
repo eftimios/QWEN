@@ -220,5 +220,6 @@ async def chat_delete_rag_doc(id: str):
     if id in model.doc_indices:
         model.doc_indices.pop(id)
         model.docs.pop(id)
+        model.links.pop(id)
     
     return Response()
