@@ -6,3 +6,6 @@ uvicorn
 faiss-cpu
 google-api-python-client
 python-dotenv
+requests
+beautifulsoup4
+lxml

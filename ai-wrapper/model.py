@@ -8,6 +8,8 @@ import torch
 from googleapiclient.discovery import build
 from dotenv import load_dotenv
 import os
+from bs4 import BeautifulSoup
+import requests
 
 load_dotenv()
 
@@ -28,18 +30,37 @@ class QwenModel:
         self.doc_indices = {}
         self.google_api_key = os.getenv("YOUR_GOOGLE_API_KEY")
         self.google_cse_id = os.getenv("YOUR_CUSTOM_SEARCH_ENGINE_ID")
-            
+        
+    def get_full_text(self, url):
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
+                return soup.get_text()
+            else:
+                return None
+        except Exception as e:
+            print(f"Error fetching URL {url}: {e}")
+            return None
+
     def get_documents_from_google(self, query, num_results=5):
         service = build("customsearch", "v1", developerKey=self.google_api_key)
         res = service.cse().list(q=query, cx=self.google_cse_id, num=num_results).execute()
-        
+
         documents = []
         links = []
+
         if "items" in res:
             for item in res["items"]:
-                documents.append(item["snippet"])
-                links.append(item["link"])
-        
+                snippet = item.get("snippet", "")
+                link = item.get("link", "")
+                documents.append(snippet)
+                links.append(link)
+
+                full_text = self.get_full_text(link)
+                if full_text:
+                    documents.append(full_text)
+
         return documents, links
 
     def load_model_tokenizer(self):
