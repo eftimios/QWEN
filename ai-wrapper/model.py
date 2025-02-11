@@ -124,6 +124,8 @@ class QwenModel:
     def retrieve_documents(self, query, id):
         query_embedding = self.get_embedding_from_str(query)
         query_embedding_np = query_embedding.reshape(1, -1)
+
+        print(self.docs)
     
         k = min(3, len(self.docs[id]))
         index = self.create_faiss_index(query, id)
