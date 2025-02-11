@@ -125,7 +125,7 @@ class QwenModel:
         query_embedding = self.get_embedding_from_str(query)
         query_embedding_np = query_embedding.reshape(1, -1)
     
-        k = 3
+        k = min(3, len(self.docs[id]))
         index = self.create_faiss_index(query, id)
         _, indices = index.search(query_embedding_np, k)
 
@@ -186,7 +186,7 @@ class QwenModel:
             yield new_text
 
         history.append((query, partial_text))
-        
+
         with lock:
             self.histories[id] = history
 
