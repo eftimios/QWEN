@@ -178,7 +178,7 @@ class QwenModel:
 
     def prompt(self, query, id, history = None, use_rag=True):
         partial_text = ""
-        if (history is None):
+        if (history is []):
             history = self.histories.get(id, [])
 
         for new_text in self.chat_stream(query, history, id, use_rag):
@@ -195,7 +195,7 @@ model = QwenModel()
 @app.post("/chat")
 async def chat_stream(request: dict):
     query = request.get("query")
-    history = request.get("history", None)
+    history = request.get("history", [])
     id = request.get("id")
     use_rag = request.get("rag", True)
 
