@@ -199,7 +199,7 @@ async def chat_stream(request: dict):
     id = request.get("id")
     use_rag = request.get("rag", True)
 
-    print(request)
+    print(query, history, id, use_rag)
 
     return StreamingResponse(model.prompt(query, id, history, use_rag), media_type="text/plain")
 
