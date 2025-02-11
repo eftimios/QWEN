@@ -194,12 +194,10 @@ model = QwenModel()
 
 @app.post("/chat")
 async def chat_stream(request: dict):
-    query = request.get("query")
-    history = request.get("history", [])
-    id = request.get("id")
-    use_rag = request.get("rag", True)
-
-    print(query, history, id, use_rag)
+    query = request.get("Query")
+    history = request.get("History", [])
+    id = request.get("Id")
+    use_rag = request.get("Rag", True)
 
     return StreamingResponse(model.prompt(query, id, history, use_rag), media_type="text/plain")
 
