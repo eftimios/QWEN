@@ -137,6 +137,10 @@ class QwenModel:
         return retrieved_docs
 
     def chat_stream(self, query, history, id, use_rag=True):
+        partial_text = ""
+        if (history is []):
+            history = self.histories.get(id, [])
+
         conversation = []
         for query_h, response_h in history:
             conversation.append({"role": "user", "content": query_h})
@@ -174,18 +178,8 @@ class QwenModel:
         thread.start()
 
         for new_text in streamer:
-            yield new_text
-
-    def prompt(self, query, id, history = None, use_rag=True):
-        partial_text = ""
-        if (history is []):
-            history = self.histories.get(id, [])
-
-        for new_text in self.chat_stream(query, history, id, use_rag):
             partial_text += new_text
             yield new_text
-
-        history.append((query, partial_text))
 
         with lock:
             self.histories[id] = history
@@ -199,7 +193,7 @@ async def chat_stream(request: dict):
     id = request.get("Id")
     use_rag = request.get("Rag", True)
 
-    return StreamingResponse(model.prompt(query, id, history, use_rag), media_type="text/plain")
+    return StreamingResponse(model.chat_stream(query, id, history, use_rag), media_type="text/plain")
 
 @app.get("/chat/history")
 async def chat_history(id: str):
