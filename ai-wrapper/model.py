@@ -199,6 +199,7 @@ app.add_middleware(
 
 @app.post("/chat")
 async def chat_stream(request: dict):
+    print(request)
     query = request.get("Query")
     history = request.get("History", [])
     print(history)
