@@ -199,6 +199,7 @@ app.add_middleware(
 async def chat_stream(request: dict):
     query = request.get("Query")
     history = request.get("History", [])
+    print(history)
     id = request.get("Id")
     use_rag = request.get("Rag", True)
 
