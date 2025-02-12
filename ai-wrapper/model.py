@@ -226,7 +226,7 @@ async def chat_rag_doc(id: str):
     if id in model.doc_indices:
         docs = [model.docs[id][i] for i in model.doc_indices[id]]
         return JSONResponse(docs)
-    return JSONResponse({"message": "History not found"}, status_code=404)
+    return JSONResponse({"message": "RAG docs not found"}, status_code=404)
 
 @app.get("/chat/del-rag-doc")
 async def chat_delete_rag_doc(id: str):
