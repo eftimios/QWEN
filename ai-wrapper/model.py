@@ -137,13 +137,11 @@ class QwenModel:
 
         return retrieved_docs
 
-    def chat_stream(self, query, id, his, use_rag=True):
+    def chat_stream(self, query, id, hisory, use_rag=True):
         partial_text = ""
-        
-        if his is []:
+
+        if hisory is []:
             history = self.histories.get(id, [])
-        else:
-            history = his
 
         print(history)
 
@@ -186,6 +184,8 @@ class QwenModel:
         for new_text in streamer:
             partial_text += new_text
             yield new_text
+        
+        history.append((query, partial_text))
 
         with lock:
             self.histories[id] = history
