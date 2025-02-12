@@ -56,9 +56,9 @@ class QwenModel:
                 link = item.get("link", "")
                 
                 documents.append({
-                    "Title": title,
-                    "Link": link,
-                    "Snippet": snippet,
+                    "title": title,
+                    "link": link,
+                    "snippet": snippet,
                 })
 
         return documents
@@ -102,7 +102,7 @@ class QwenModel:
 
     def get_embedding_from_dict(self, doc):
         """Get the embedding for a dict using the model"""
-        inputs = self.tokenizer(f"Title: {doc['Title']}\nSnippet: {doc['Snippet']}", 
+        inputs = self.tokenizer(f"Title: {doc['title']}\nSnippet: {doc['snippet']}", 
             return_tensors="pt", padding=True, truncation=True, max_length=512).to(self.model.device)
         with torch.no_grad():
             outputs = self.embedder(**inputs)
@@ -154,7 +154,7 @@ class QwenModel:
             conversation.extend([
                 {
                     "role": "system", 
-                    "content": f"Title: {doc['Title']}\nSnippet: {doc['Snippet']}\nFull-Text: {self.get_full_text(doc['Link'])}"
+                    "content": f"Title: {doc['title']}\nSnippet: {doc['snippet']}\nFull-Text: {self.get_full_text(doc['link'])}"
                 } for doc in retrieved_docs
             ])
 
