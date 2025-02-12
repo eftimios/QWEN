@@ -140,7 +140,7 @@ class QwenModel:
     def chat_stream(self, query, id, his, use_rag=True):
         partial_text = ""
 
-        if his is []:
+        if his is None or len(his) == 0:
             history = self.histories.get(id, [])
         else:
             history = his
