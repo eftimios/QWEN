@@ -41,7 +41,6 @@ class QwenModel:
             else:
                 return None
         except Exception as e:
-            print(f"Error fetching URL {url}: {e}")
             return None
 
     def get_documents_from_google(self, query, num_results=5):
@@ -145,8 +144,6 @@ class QwenModel:
         else:
             history = his
 
-        print(history)
-
         conversation = []
         for query_h, response_h in history:
             conversation.append({"role": "user", "content": query_h})
@@ -204,10 +201,8 @@ app.add_middleware(
 
 @app.post("/chat")
 async def chat_stream(request: dict):
-    print(request)
     query = request.get("Query")
     history = request.get("History", [])
-    print(history)
     id = request.get("Id")
     use_rag = request.get("Rag", True)
 
