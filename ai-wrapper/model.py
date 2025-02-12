@@ -187,7 +187,7 @@ class QwenModel:
             partial_text += new_text
             yield new_text
         
-        history.append((query, partial_text))
+        history.append([query, partial_text])
 
         with lock:
             self.histories[id] = history
