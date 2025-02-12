@@ -180,7 +180,6 @@ class QwenModel:
 
         for new_text in streamer:
             partial_text += new_text
-            print(new_text)
             yield new_text
 
         with lock:
