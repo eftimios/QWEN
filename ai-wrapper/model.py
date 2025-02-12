@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import os
 from bs4 import BeautifulSoup
 import requests
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
@@ -186,6 +187,14 @@ class QwenModel:
             self.histories[id] = history
 
 model = QwenModel()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allow all headers
+)
 
 @app.post("/chat")
 async def chat_stream(request: dict):
