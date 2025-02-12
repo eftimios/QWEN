@@ -142,6 +142,8 @@ class QwenModel:
         if (history is []):
             history = self.histories.get(id, [])
 
+        print(history)
+
         conversation = []
         for query_h, response_h in history:
             conversation.append({"role": "user", "content": query_h})
