@@ -2,9 +2,11 @@
 docs/_build/
 docs/build/
 docs/**/*.mo
-.vscode
 .idea
 venv/
 .venv/
 __pycache__/
 .env
+temp_auto_push.bat
+temp_interactive_push.bat
+.gitignore
