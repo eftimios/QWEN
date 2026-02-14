@@ -11,7 +11,7 @@ import os
 from bs4 import BeautifulSoup
 import requests
 from fastapi.middleware.cors import CORSMiddleware
-
+# load env
 load_dotenv()
 
 app = FastAPI()
